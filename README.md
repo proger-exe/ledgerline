@@ -1,5 +1,11 @@
 # Ledgerline
 
+<!-- portfolio-card:start -->
+[![Ledgerline — Проектные бюджеты, согласования и учёт.](docs/portfolio/card.png)](docs/portfolio/screenshot.png)
+
+Интерфейс с вымышленными данными, без подключения к Telegram и платёжной сети. [Полный размер](docs/portfolio/screenshot.png). [Десктоп](docs/portfolio/screenshot-extra.png).
+<!-- portfolio-card:end -->
+
 Telegram-бот + Mini App для казначейства компании: кошельки, платежи с approvals, бюджеты проектов, double-entry ledger, аудит. MVP по `docs/techtask.md` §54, сеть TRON / USDT.
 
 ```
