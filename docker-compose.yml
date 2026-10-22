@@ -1,0 +1,62 @@
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: core
+      POSTGRES_DB: core
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      SIGNER_DB_PASSWORD: ${SIGNER_DB_PASSWORD:?set SIGNER_DB_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U core -d core"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://core:${DB_PASSWORD}@db:5432/core
+      SIGNER_URL: http://signer:8001
+      SIGNER_TOKEN_FILE: /run/secrets/signer_token
+    secrets: [signer_token]
+    ports:
+      - "127.0.0.1:8000:8000"  # put HTTPS (reverse proxy / tunnel) in front; that URL is WEBAPP_URL
+    depends_on:
+      db: {condition: service_healthy}
+
+  signer:
+    build: .
+    restart: unless-stopped
+    command: ["uvicorn", "app.signer:app", "--host", "0.0.0.0", "--port", "8001"]
+    # No `ports:` on purpose: reachable only from containers on this compose network.
+    environment:
+      DATABASE_URL: postgresql+asyncpg://signer:${SIGNER_DB_PASSWORD}@db:5432/core
+      SIGNER_KEY_FILE: /run/secrets/signer_key
+      SIGNER_TOKEN_FILE: /run/secrets/signer_token
+      SIGNER_JOURNAL: /data/signer.db
+      SIGNER_MAX_TX: ${SIGNER_MAX_TX:-1000}
+      SIGNER_MAX_DAILY: ${SIGNER_MAX_DAILY:-3000}
+      TRON_NETWORK: ${TRON_NETWORK:-mainnet}
+      TRONGRID_API_KEY: ${TRONGRID_API_KEY:-}
+    secrets: [signer_key, signer_token]
+    volumes:
+      - signerdata:/data
+    depends_on:
+      db: {condition: service_healthy}
+
+# Secret files must be readable by the container user (uid 10001), and by nobody else:
+#   sudo chown 10001 secrets/* && sudo chmod 400 secrets/*
+secrets:
+  signer_key:
+    file: ./secrets/signer_key      # hex private key of the Operations hot wallet
+  signer_token:
+    file: ./secrets/signer_token    # random shared token api <-> signer
+
+volumes:
+  pgdata:
+  signerdata:

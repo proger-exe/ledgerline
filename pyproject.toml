@@ -1,0 +1,32 @@
+[project]
+name = "core-finance"
+version = "0.1.0"
+description = "Ledgerline: Telegram bot + Mini App for treasury, payments, budgets and ledger"
+requires-python = ">=3.13"
+dependencies = [
+  "aiogram>=3.20,<4",
+  "asyncpg>=0.30,<1",
+  "fastapi>=0.115,<1",
+  "segno>=1.6,<2",
+  "sqlalchemy>=2.0,<3",
+  "tronpy>=0.5,<1",
+  "uvicorn[standard]>=0.30,<1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8,<10",
+]
+
+[tool.uv]
+package = false
+# tronpy pins coincurve 20, which has no py3.13 wheels; 21+ is API-compatible
+override-dependencies = ["coincurve>=21"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
